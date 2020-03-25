@@ -1,13 +1,13 @@
 import mongoengine
 import graphene
 import re
-
 import inspect
 import json
+import logging
 
 from .conversion_dicts import field_conversion_dict, argument_conversion_dict
 
-import logging
+from datetime import datetime
 
 logger = logging.getLogger()
 
@@ -93,17 +93,26 @@ class BaseDocumentGraphene:
             return prop(DocumentGrapheneInputObject(doc_type).object)
 
     def serialize_document(self, doc):
-        doc_dict = json.loads(doc.to_json())
-
+        doc.select_related()
+        doc_dict = doc._data
+        return self.serialize_document_json(self.document, doc_dict)
+    
+    @classmethod
+    def serialize_document_json(cls, document_type, doc_dict):
         for key, value in doc_dict.items():
-            if key == '_id': 
-                doc_dict['_id'] = doc_dict['_id']['$oid']
+            if value is None:
                 continue
 
-            f_ = getattr(self.document, key)
+            if key == '_id': 
+                doc_dict['_id'] = str(doc_dict['_id'])
+                continue
+
+            f_ = getattr(document_type, key)
 
             if type(f_) is mongoengine.fields.ListField and type(f_.field) is mongoengine.fields.ReferenceField:
-                doc_dict[key] = [ i_['$oid'] for i_ in value ]
+                doc_dict[key] = [ cls.serialize_document_json(f_.field.document_type, i_._data) for i_ in value ]
+            elif type(f_) is mongoengine.fields.EmbeddedDocumentField:
+                doc_dict[key] = cls.serialize_document_json(f_.document_type, value._data)
 
         return doc_dict
 
