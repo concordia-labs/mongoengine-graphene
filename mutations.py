@@ -82,10 +82,6 @@ class DocumentUpdateGrapheneMutation(BaseDocumentGraphene):
 
         def mutate(self, info, filter, data, *args, **kwargs):
             result = None
-
-            if filter.get('_id', None) is not None:
-                filter['id'] = filter.get('_id')
-                del filter['_id']
                 
             try:
                 doc_ = doc.objects(**kwargs_function(self, info, **filter)).first()
@@ -97,7 +93,7 @@ class DocumentUpdateGrapheneMutation(BaseDocumentGraphene):
                         f_ = getattr(doc, key)
 
                         if type(f_) is mongoengine.fields.ListField and type(f_.field) is mongoengine.fields.ReferenceField:
-                            props[key] = [ d_._id for d_ in f_.field.document_type.objects(_id__in=value)]
+                            props[key] = [ d_.id for d_ in f_.field.document_type.objects(id__in=value)]
 
                     doc_.update(**props)
 
@@ -124,7 +120,7 @@ class DocumentDeleteGrapheneMutation(BaseDocumentGraphene):
 
     def _get_arguments_class(self):
         return type('Arguments', (), {
-            '_id': graphene.String()
+            'id': graphene.String()
         })
 
     def _get_graphene_object_name(self):
@@ -145,9 +141,6 @@ class DocumentDeleteGrapheneMutation(BaseDocumentGraphene):
 
         def mutate(self, info, *args, **kwargs):
             result = None
-            if kwargs.get('_id', None) is not None:
-                kwargs['id'] = kwargs.get('_id')
-                del kwargs['_id']
 
             try:
                 doc.objects(**kwargs_function(self, info, **kwargs)).delete()        

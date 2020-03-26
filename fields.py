@@ -64,21 +64,17 @@ class DocumentGrapheneList(BaseDocumentGraphene):
             Returns a graphene resolver for the object property
         """
         
-        def default_resolver(self, info, limit = 10, offset = 0,**kwargs):
-            if kwargs.get('_id', None) is not None:
-                kwargs['id'] = kwargs.get('_id')
-                del kwargs['_id']
+        kwargs_function = self.resolver_kwargs_function
+        doc_serializer  = self.serialize_document
+        doc = self.document
 
+        def default_resolver(self, info, limit = 10, offset = 0,**kwargs):
             queryset = doc.objects(**kwargs_function(self, info, **kwargs))[offset:offset + limit]
             
             return [ doc_serializer(d) for d in queryset]
 
         if self.custom_resolver:
             default_resolver = self.custom_resolver
-
-        kwargs_function = self.resolver_kwargs_function
-        doc_serializer  = self.serialize_document
-        doc = self.document
 
         def resolver(self, info, *args, **kwargs):
             try:
