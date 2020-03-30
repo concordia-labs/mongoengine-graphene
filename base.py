@@ -34,7 +34,7 @@ class BaseDocumentGraphene:
         """
             Returns the graphene ObjectType properties based on the mongoengine document fields.
         """
-        logger.debug('{:25} - Get Graphene Props'.format(self.__class__.__name__))
+        # logger.spam('{:25} - Get Graphene Props'.format(self.__class__.__name__))
 
         props = {
             'id': graphene.String()
@@ -56,7 +56,6 @@ class BaseDocumentGraphene:
                     prop_args = inspect.getfullargspec(prop_converted).args
                     if prop_type is mongoengine.fields.ListField:
                         if type(prop.field) is mongoengine.fields.ReferenceField:
-                            print(prop_key)
                             if conversion_type == 'field':
                                 props[prop_key] = graphene.List(DocumentGrapheneObject(prop.field.document_type).object)
                             else:
@@ -96,6 +95,19 @@ class BaseDocumentGraphene:
         else:
             return prop(DocumentGrapheneInputObject(doc_type).object)
 
+    def _parse_kwargs_function_result(self, result):
+        filter_args = tuple()
+        filter_kwargs = {}
+
+        if type(result) is tuple or type(result) is list:
+            filter_args = result
+        elif type(result) is mongoengine.queryset.visitor.QCombination:
+            filter_args = [result]
+        elif type(result) is dict:
+            filter_kwargs = result
+
+        return filter_args, filter_kwargs
+
     def serialize_document(self, doc):
         doc.select_related()
         doc_dict = doc._data
@@ -115,13 +127,10 @@ class BaseDocumentGraphene:
                 or type(f_) is mongoengine.EmbeddedDocumentListField:
                 if type(f_.field) is mongoengine.ReferenceField\
                     or type(f_.field) is mongoengine.EmbeddedDocumentField:
-                    print(f_.field.document_type)
                     doc_dict[key] = [ cls.serialize_document_json(f_.field.document_type, i_._data) for i_ in value ]
             elif type(f_) is mongoengine.ReferenceField\
                 or type(f_) is mongoengine.EmbeddedDocumentField:
                 doc_dict[key] = cls.serialize_document_json(f_.document_type, value._data)
-            else:
-                print(type(f_))
 
         return doc_dict
 

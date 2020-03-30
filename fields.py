@@ -68,8 +68,10 @@ class DocumentGrapheneList(BaseDocumentGraphene):
         doc_serializer  = self.serialize_document
         doc = self.document
 
-        def default_resolver(self, info, limit = 10, offset = 0,**kwargs):
-            queryset = doc.objects(**kwargs_function(self, info, **kwargs))[offset:offset + limit]
+        def default_resolver(self_, info, limit = 10, offset = 0,**kwargs):
+            filter_ = self._parse_kwargs_function_result(kwargs_function(self_, info, **kwargs))
+            
+            queryset = doc.objects.filter(*filter_[0], **filter_[1])[offset:offset + limit]
             
             return [ doc_serializer(d) for d in queryset]
 
