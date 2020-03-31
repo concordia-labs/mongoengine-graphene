@@ -20,7 +20,7 @@ class DocumentCreateGrapheneMutation(BaseDocumentGraphene):
         """
             Returns the graphene Mutation object.
         """
-        kwargs_function = self.resolver_kwargs_function
+        kwargs_function = self.mutation_kwargs_function
         doc = self.document
         name = self._get_graphene_object_name()
 
@@ -74,23 +74,22 @@ class DocumentUpdateGrapheneMutation(BaseDocumentGraphene):
         """
             Returns the graphene Mutation object.
         """
-        kwargs_function = self.resolver_kwargs_function
-        doc = self.document
         name = self._get_graphene_object_name()
 
         if name in existent_types: return existent_types[name]
 
-        def mutate(self, info, filter, data, *args, **kwargs):
+        def mutate(self_, info, filter, data, *args, **kwargs):
             result = None
                 
             try:
-                doc_ = doc.objects(**kwargs_function(self, info, **filter)).first()
+                print(self.resolver_kwargs_function(self_, info, **filter))
+                doc_ = self.document.objects.filter(**self.resolver_kwargs_function(self_, info, **filter)).first()
 
                 if doc_:
-                    props = kwargs_function(self, info, **data)
+                    props = self.mutation_kwargs_function(self_, info, **data)
 
                     for key, value in props.items():
-                        f_ = getattr(doc, key)
+                        f_ = getattr(self.document, key)
 
                         if type(f_) is mongoengine.fields.ListField and type(f_.field) is mongoengine.fields.ReferenceField:
                             props[key] = [ d_.id for d_ in f_.field.document_type.objects(id__in=value)]
@@ -101,7 +100,7 @@ class DocumentUpdateGrapheneMutation(BaseDocumentGraphene):
             except Exception as e:
                 logger.exception(e)
 
-            return DocumentCreateGrapheneMutation(doc).object(document=result, ok=(result is not None))
+            return DocumentCreateGrapheneMutation(self.document).object(document=result, ok=(result is not None))
 
         props = {
             'ok': graphene.Boolean(),
@@ -133,22 +132,20 @@ class DocumentDeleteGrapheneMutation(BaseDocumentGraphene):
         """
             Returns the graphene Mutation object.
         """
-        kwargs_function = self.resolver_kwargs_function
-        doc = self.document
         name = self._get_graphene_object_name()
 
         if name in existent_types: return existent_types[name]
 
-        def mutate(self, info, *args, **kwargs):
+        def mutate(self_, info, *args, **kwargs):
             result = None
 
             try:
-                doc.objects(**kwargs_function(self, info, **kwargs)).delete()        
+                self.document.objects(**self.resolver_kwargs_function(self_, info, **kwargs)).delete()        
                 result = True
             except Exception as e:
                 logger.exception(e)
 
-            return DocumentDeleteGrapheneMutation(doc).object(ok=(result is not None))
+            return DocumentDeleteGrapheneMutation(self.document).object(ok=(result is not None))
 
         props = {
             'ok': graphene.Boolean(),

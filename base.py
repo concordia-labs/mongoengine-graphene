@@ -21,10 +21,12 @@ class BaseDocumentGraphene:
     object = None
     resolver = None
     resolver_kwargs_function = None
+    mutation_kwargs_function = None
 
-    def __init__(self, mongoengine_doc, resolver_kwargs_function = lambda self, info, **kwargs: kwargs):
+    def __init__(self, mongoengine_doc, resolver_kwargs_function = lambda self, info, **kwargs: kwargs, mutation_kwargs_function = lambda self, info, **kwargs: kwargs):
         self.document = mongoengine_doc
         self.resolver_kwargs_function = resolver_kwargs_function
+        self.mutation_kwargs_function = mutation_kwargs_function
 
         self.object = self._get_graphene_ref()
 
