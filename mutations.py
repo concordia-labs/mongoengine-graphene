@@ -82,13 +82,16 @@ class DocumentUpdateGrapheneMutation(BaseDocumentGraphene):
             result = None
                 
             try:
-                print(self.resolver_kwargs_function(self_, info, **filter))
                 doc_ = self.document.objects.filter(**self.resolver_kwargs_function(self_, info, **filter)).first()
 
                 if doc_:
                     props = self.mutation_kwargs_function(self_, info, **data)
 
                     for key, value in props.items():
+                        if value is None:
+                            props[key] = None
+                            continue
+                        
                         f_ = getattr(self.document, key)
 
                         if type(f_) is mongoengine.fields.ListField and type(f_.field) is mongoengine.fields.ReferenceField:
