@@ -20,11 +20,15 @@ class BaseDocumentGraphene:
     document = None
     object = None
     resolver = None
+    extra_kwargs = []
     resolver_kwargs_function = None
     mutation_kwargs_function = None
 
-    def __init__(self, mongoengine_doc, resolver_kwargs_function = lambda self, info, **kwargs: kwargs, mutation_kwargs_function = lambda self, info, **kwargs: kwargs):
+    def __init__(self, mongoengine_doc, extra_kwargs = [], resolver_kwargs_function = lambda self, info, **kwargs: kwargs, mutation_kwargs_function = lambda self, info, **kwargs: kwargs, *args, **kwargs):
         self.document = mongoengine_doc
+
+        self.extra_kwargs = extra_kwargs
+
         self.resolver_kwargs_function = resolver_kwargs_function
         self.mutation_kwargs_function = mutation_kwargs_function
 
@@ -41,6 +45,16 @@ class BaseDocumentGraphene:
         props = {
             'id': graphene.String()
         }
+
+        for arg in self.extra_kwargs:
+            key = arg[0]
+            type_ = arg[1] if len(arg) > 1 else graphene.String()
+            resolver = arg[2] if len(arg) > 2 else None
+
+            props.update([(key, type_(),)])
+
+            if conversion_type =='field' and resolver:
+                props.update([('resolve_' + key, resolver,)])
 
         for prop_key in dir(self.document):
             try:

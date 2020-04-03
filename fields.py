@@ -49,7 +49,7 @@ class DocumentGrapheneList(BaseDocumentGraphene):
             Returns the graphene object List.
         """
 
-        graphene_obj = DocumentGrapheneObject(self.document)
+        graphene_obj = DocumentGrapheneObject(self.document, extra_kwargs=self.extra_kwargs)
 
         props = graphene_obj.get_graphene_props(conversion_type='argument')
         props.update({
