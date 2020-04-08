@@ -4,7 +4,16 @@ import mongoengine
 from .base import logger, existent_types, BaseDocumentGraphene
 from .fields import DocumentGrapheneField
 
-class DocumentCreateGrapheneMutation(BaseDocumentGraphene):
+class BaseDocumentGrapheneMutation(BaseDocumentGraphene):
+    post_mutate = None
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        if 'post_mutate' in kwargs:
+            self.post_mutate = kwargs['post_mutate']
+
+class DocumentCreateGrapheneMutation(BaseDocumentGrapheneMutation):
 
     def _get_arguments_class(self):
         props = self.get_graphene_props('argument')
@@ -37,6 +46,9 @@ class DocumentCreateGrapheneMutation(BaseDocumentGraphene):
             except Exception as e:
                 logger.exception(e)
 
+            if result is not None and self.post_mutate is not None:
+                self.post_mutate(self_, info, result, *args, **kwargs)
+
             return DocumentCreateGrapheneMutation(doc).object(document=result, ok=(result is not None))
 
         props = {
@@ -52,7 +64,7 @@ class DocumentCreateGrapheneMutation(BaseDocumentGraphene):
 
         return type_
 
-class DocumentUpdateGrapheneMutation(BaseDocumentGraphene):
+class DocumentUpdateGrapheneMutation(BaseDocumentGrapheneMutation):
 
     def _get_arguments_class(self):
         props = self.get_graphene_props('argument')
@@ -80,6 +92,7 @@ class DocumentUpdateGrapheneMutation(BaseDocumentGraphene):
 
         def mutate(self_, info, filter, data, *args, **kwargs):
             result = None
+            doc_ = None
                 
             try:
                 doc_ = self.document.objects.filter(**self.resolver_kwargs_function(self_, info, **filter)).first()
@@ -103,6 +116,9 @@ class DocumentUpdateGrapheneMutation(BaseDocumentGraphene):
             except Exception as e:
                 logger.exception(e)
 
+            if result is not None and self.post_mutate is not None:
+                self.post_mutate(self_, info, filter, data, result, document=doc_, *args, **kwargs)
+
             return DocumentCreateGrapheneMutation(self.document).object(document=result, ok=(result is not None))
 
         props = {
@@ -118,7 +134,7 @@ class DocumentUpdateGrapheneMutation(BaseDocumentGraphene):
 
         return type_
 
-class DocumentDeleteGrapheneMutation(BaseDocumentGraphene):
+class DocumentDeleteGrapheneMutation(BaseDocumentGrapheneMutation):
 
     def _get_arguments_class(self):
         return type('Arguments', (), {
@@ -147,6 +163,9 @@ class DocumentDeleteGrapheneMutation(BaseDocumentGraphene):
                 result = True
             except Exception as e:
                 logger.exception(e)
+
+            if result is not None and self.post_mutate is not None:
+                self.post_mutate(self_, info, result, *args, **kwargs)
 
             return DocumentDeleteGrapheneMutation(self.document).object(ok=(result is not None))
 
