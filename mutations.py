@@ -35,11 +35,11 @@ class DocumentCreateGrapheneMutation(BaseDocumentGrapheneMutation):
 
         if name in existent_types: return existent_types[name]
 
-        def mutate(self, info, *args, **kwargs):
+        def mutate(self_, info, *args, **kwargs):
             result = None
 
             try:
-                doc_ = doc(**kwargs_function(self, info, **kwargs))
+                doc_ = doc(**kwargs_function(self_, info, **kwargs))
                 doc_.save()
 
                 result = doc_._data            
